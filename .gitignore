@@ -14,22 +14,15 @@ build/
 venv/
 env/
 .venv/
-.env
 
 # Environment variables
 .env
 .env.local
 *.env
 
-# Database / data files
-*.db
-*.sqlite
-*.sqlite3
-
-# Personal data — resume files
-data/*.docx
-data/*.pdf
-data/*.txt
+# Personal data — resume files and job database stay local
+data/
+output/
 
 # OS files
 .DS_Store

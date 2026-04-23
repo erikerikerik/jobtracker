@@ -1,0 +1,23 @@
+[project]
+name = "job-agent"
+version = "0.1.0"
+description = "Resume-aware job search bot — scores and ranks listings from public ATS boards and job feeds."
+requires-python = ">=3.9"
+dependencies = [
+  "beautifulsoup4>=4.12.3",
+  "pypdf>=5.4.0",
+  "python-docx>=1.1.2",
+  "PyYAML>=6.0.2",
+  "requests>=2.32.3",
+]
+
+[project.scripts]
+job-agent = "job_agent.cli:main"
+job-agent-gui = "job_agent.gui:main"
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["job_agent"]

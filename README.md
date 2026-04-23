@@ -1,68 +1,94 @@
-# JobTracker
+# Job Agent
 
-A local job search management app with intelligent resume-based matching.
+A resume-aware job search bot that pulls listings from public job feeds and company ATS boards, scores them against your resume, and writes ranked reports each run.
+
+Works for any field or role type — just configure `config/search.yaml` with your target titles and keywords.
+
+## What It Does
+
+- Parses your resume from `pdf`, `docx`, `txt`, or `md`
+- Pulls jobs from:
+  - `Remotive`
+  - `Remote OK`
+  - `Greenhouse` public boards
+  - `Lever` public postings
+  - `Ashby` public job boards
+- Filters for fully remote jobs (and optionally a target city)
+- Scores and ranks matches against your resume content and configured preferences
+- Tracks which listings are new since the last run
+- Writes reports to the `output/` folder:
+  - `output/top_matches.md` — best matches, highest score first
+  - `output/new_matches.md` — newly discovered listings since the previous run
+  - `output/top_matches.csv` — spreadsheet-friendly export
+  - `output/top_matches.json` — structured full results
 
 ## Setup
 
-1. **Install Python dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
+```
 
-2. **Optional — pre-load your resume** (place a `.docx`, `.pdf`, or `.txt` in the data folder):
-   ```bash
-   mkdir -p data
-   cp /path/to/your_resume.pdf data/resume.pdf
-   ```
-   Or upload directly via the UI after launch.
+Place your resume in the `data/` folder:
 
-3. **Run:**
-   ```bash
-   python app.py
-   ```
+```bash
+mkdir -p data
+cp /path/to/your_resume.pdf data/resume.pdf
+```
 
-4. **Open in browser:** http://localhost:5001
+Supported formats: `.pdf`, `.docx`, `.txt`, `.md`
 
----
+## Configure
 
-## Features
+Edit `config/search.yaml` to set your target titles, boost keywords, industry preferences, and location settings. The file is fully commented — it should be self-explanatory.
 
-### Job Management
-- **Add jobs manually** — paste a URL to auto-fill title and description from any job posting
-- **Import CSV** — bulk-import jobs from a CSV file
-- **Status pipeline** — Interested → Applied → Interview → Offer / Rejected
-- **Notes per job** — saved automatically on blur
+Edit `config/company_boards.yaml` to add specific companies you want to monitor. The bot will pull all open roles from each company's ATS directly.
 
-### Board View
-- Kanban-style view across all pipeline stages
+To find a company's ATS slug, visit their job board:
+- Greenhouse: `boards.greenhouse.io/<slug>`
+- Lever: `jobs.lever.co/<slug>`
+- Ashby: `jobs.ashbyhq.com/<slug>`
 
-### Intelligent Scoring
-- Upload your resume (`.docx`, `.pdf`, or `.txt`) to enable content-based matching
-- Scores based on keyword overlap between your resume and each job posting — works for any industry or role type
-- Detects seniority alignment between your background and the job level
-- Re-score all jobs any time you update your resume
+## Run
 
-### Sources
-- **Greenhouse API** — add any company using Greenhouse (just use their company slug)
-- **Lever API** — add any company using Lever
-- **Ashby API** — add any company using Ashby
-- **Direct scraper** — basic scrape of any career page URL
-- Fetch one source at a time or batch-fetch all active sources
-- Duplicate detection prevents re-importing jobs already in the database
+```bash
+job-agent --resume data/resume.pdf
+```
 
-### Adding New Job Sources
-Many companies use Greenhouse, Lever, or Ashby for their job boards. To add one:
-1. Go to **Sources → Add Source**
-2. Select the ATS type (Greenhouse / Lever / Ashby)
-3. Enter the company name and their ATS slug
+With explicit config paths or a custom result limit:
 
-To find a company's Greenhouse slug: try `https://boards-api.greenhouse.io/v1/boards/COMPANYNAME/jobs`
+```bash
+job-agent \
+  --resume data/resume.pdf \
+  --search-config config/search.yaml \
+  --company-config config/company_boards.yaml \
+  --limit 100
+```
 
----
+## GUI
 
-## Data
-All data is stored in `data/jobs.db` (SQLite). Back it up anytime by copying that file.
+Launch the desktop interface:
 
-## Keyboard Shortcuts
-- `Escape` — close panels/modals
-- `Cmd/Ctrl+K` — focus search
+```bash
+job-agent-gui
+```
+
+The GUI lets you browse and sort ranked results in a table, view job details and match reasons, open listings directly in your browser, and access generated reports — no terminal required after setup.
+
+## Outputs
+
+| File | Description |
+|------|-------------|
+| `output/top_matches.md` | Best matches ranked by score |
+| `output/new_matches.md` | Jobs new since last run |
+| `output/top_matches.csv` | Full results as a spreadsheet |
+| `output/top_matches.json` | Full results as JSON |
+| `data/job_agent.sqlite3` | Seen-job state (used to detect new listings) |
+
+## Notes
+
+- The bot uses public ATS APIs — no browser automation, no scraping fragility.
+- Adding companies to `config/company_boards.yaml` significantly improves coverage for your specific target employers.
+- Run it on a schedule (e.g. daily cron) to get a fresh `new_matches.md` each morning.
+- The `data/` folder is gitignored — your resume and job database stay local.

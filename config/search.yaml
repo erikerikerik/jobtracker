@@ -1,0 +1,138 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Job Agent — Search Configuration
+#
+# Customise this file for your field, seniority level, and preferred location.
+# The bot scores every job it finds against your resume AND these preferences,
+# then writes ranked results to the output/ folder.
+# ─────────────────────────────────────────────────────────────────────────────
+
+preferences:
+
+  # ── Target titles ──────────────────────────────────────────────────────────
+  # Partial matches work — "engineer" will match "Senior Software Engineer".
+  # A title match is a strong positive signal and boosts the score significantly.
+  # Replace these with titles relevant to your field.
+  target_titles:
+    - software engineer
+    - senior software engineer
+    - staff engineer
+    - principal engineer
+    - engineering manager
+    - product manager
+    - senior product manager
+    - director of product
+    - data scientist
+    - machine learning engineer
+    - backend engineer
+    - full stack engineer
+
+  # ── Preferred industries ───────────────────────────────────────────────────
+  # Keywords that should appear somewhere in the job posting.
+  # Set require_industry_match: false below to treat these as a boost only.
+  preferred_industries:
+    - technology
+    - software
+    - saas
+    - fintech
+    - startup
+    - scale-up
+    - platform
+    - cloud
+
+  # ── Seniority signals ──────────────────────────────────────────────────────
+  # Matched against the job title only.
+  # Set require_seniority_match: false to stop filtering on these.
+  preferred_seniority_terms:
+    - senior
+    - sr
+    - staff
+    - principal
+    - lead
+    - manager
+    - director
+    - head
+    - vp
+    - vice president
+
+  # ── Boost keywords ─────────────────────────────────────────────────────────
+  # Jobs containing more of these score higher.
+  # Add tools, methodologies, and domain terms that matter to you.
+  boost_keywords:
+    - python
+    - sql
+    - api
+    - cloud
+    - aws
+    - gcp
+    - azure
+    - distributed systems
+    - microservices
+    - kubernetes
+    - docker
+    - ci/cd
+    - machine learning
+    - data pipeline
+    - product strategy
+    - roadmap
+    - cross-functional
+    - agile
+
+  # ── Avoid keywords ─────────────────────────────────────────────────────────
+  # Jobs containing ANY of these are silently skipped.
+  # Use sparingly — add only things that are truly a dealbreaker.
+  avoid_keywords:
+    - requires security clearance
+    - active clearance required
+    - no remote
+    - must relocate
+
+  # ── Filtering thresholds ───────────────────────────────────────────────────
+  # Minimum number of boost_keywords that must match (when require_title_or_keyword_match is true).
+  minimum_keyword_matches: 1
+
+  # Minimum number of preferred_industries that must match (when require_industry_match is true).
+  minimum_industry_matches: 1
+
+  # A job must match at least one target_title OR hit minimum_keyword_matches.
+  require_title_or_keyword_match: true
+
+  # A job must hit minimum_industry_matches. Set false for a broader search.
+  require_industry_match: false
+
+  # A job must include at least one preferred_seniority_term in its title.
+  require_seniority_match: false
+
+  # ── Location preferences ───────────────────────────────────────────────────
+  # Only return fully-remote jobs (and any matching phoenix_metro_terms below).
+  remote_only_or_phoenix: true
+
+  # Boost score for fully-remote roles.
+  prefer_remote: true
+
+  # Boost score for Phoenix-metro roles. Set true if you want local options too.
+  prefer_phoenix: false
+
+  # Filter out remote jobs that appear to be outside the US.
+  usa_only_remote: true
+
+  # Location terms used to detect Phoenix-metro postings.
+  # Update this list for your own city if you want local + remote results.
+  phoenix_metro_terms:
+    - phoenix
+    - scottsdale
+    - tempe
+    - mesa
+    - chandler
+    - gilbert
+    - glendale
+    - peoria
+
+  # Maximum number of results written to each report.
+  report_limit: 50
+
+# ── Runtime settings ──────────────────────────────────────────────────────────
+runtime:
+  output_dir: output
+  sqlite_path: data/job_agent.sqlite3
+  request_timeout_seconds: 25
+  user_agent: JobAgent/0.1 (+resume-aware job search bot)

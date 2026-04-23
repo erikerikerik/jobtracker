@@ -1,0 +1,56 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Job Agent — Company ATS Boards
+#
+# Add specific companies you want to monitor here.
+# The bot will pull all open roles directly from each company's ATS.
+#
+# Find a company's slug by visiting their job board URL:
+#   Greenhouse:  boards.greenhouse.io/<slug>
+#   Lever:       jobs.lever.co/<slug>
+#   Ashby:       jobs.ashbyhq.com/<slug>
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Example Greenhouse companies (replace with companies in your field)
+greenhouse:
+  - slug: airbnb
+    label: Airbnb
+  - slug: stripe
+    label: Stripe
+  - slug: brex
+    label: Brex
+  - slug: ramp
+    label: Ramp
+  - slug: figma
+    label: Figma
+
+# Example Lever companies
+lever:
+  - slug: mercury
+    label: Mercury
+  - slug: sourcegraph
+    label: Sourcegraph
+
+# Example Ashby companies
+ashby:
+  - slug: linear
+    label: Linear
+  - slug: retool
+    label: Retool
+  - slug: vercel
+    label: Vercel
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Add more companies using the same format:
+#
+# greenhouse:
+#   - slug: company-name
+#     label: Company Name
+#
+# lever:
+#   - slug: company-name
+#     label: Company Name
+#
+# ashby:
+#   - slug: company-name
+#     label: Company Name
+# ─────────────────────────────────────────────────────────────────────────────
