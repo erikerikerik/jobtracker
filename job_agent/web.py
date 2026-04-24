@@ -160,6 +160,92 @@ def _tokenize(text: str) -> list[str]:
     return [w for w in words if len(w) > 2 and w not in _STOPWORDS]
 
 
+def suggest_profile_from_resume(text: str) -> dict:
+    """
+    Analyse resume text and return suggested search-profile values:
+    target_titles, preferred_keywords, preferred_industries, preferred_seniority.
+    """
+    lines = [l.strip() for l in text.split("\n") if l.strip()]
+    text_lower = text.lower()
+
+    # ── 1. Job titles ────────────────────────────────────────────────────────
+    TITLE_WORDS = {
+        "engineer", "developer", "manager", "director", "analyst", "designer",
+        "lead", "head", "principal", "staff", "architect", "scientist",
+        "researcher", "consultant", "specialist", "coordinator", "associate",
+        "administrator", "executive", "officer", "president", "vp",
+        "product", "software", "data", "backend", "frontend", "fullstack",
+        "full-stack", "devops", "cloud", "platform", "operations", "strategy",
+        "growth", "marketing", "sales", "finance", "compliance", "legal",
+        "accounting", "recruiter", "recruiting", "talent",
+    }
+    titles_found: list[str] = []
+    seen_titles: set[str] = set()
+    for line in lines:
+        words = line.lower().split()
+        if 2 <= len(words) <= 8 and set(words) & TITLE_WORDS:
+            # Strip trailing company/date info after common separators
+            clean = re.split(r"\s*[\|@·•–—]\s*|\s+at\s+|\s*,\s*", line, maxsplit=1)[0].strip()
+            clean_lower = clean.lower()
+            if 2 <= len(clean.split()) <= 6 and len(clean) < 60 and clean_lower not in seen_titles:
+                seen_titles.add(clean_lower)
+                titles_found.append(clean_lower)
+    titles_found = titles_found[:10]
+
+    # ── 2. Seniority markers ─────────────────────────────────────────────────
+    SENIORITY_CANDIDATES = [
+        "senior", "sr", "lead", "staff", "principal", "manager",
+        "director", "head of", "vp", "vice president",
+        "associate director", "junior", "associate",
+    ]
+    seniority_found: list[str] = []
+    seen_sen: set[str] = set()
+    for s in SENIORITY_CANDIDATES:
+        if s in text_lower and s not in seen_sen:
+            seen_sen.add(s)
+            seniority_found.append(s)
+    seniority_found = seniority_found[:5]
+
+    # ── 3. Technical / domain keywords ──────────────────────────────────────
+    skills = extract_skills_from_resume(text)
+    KNOWN_TECH = {
+        "python", "sql", "java", "javascript", "typescript", "golang", "rust",
+        "aws", "gcp", "azure", "docker", "kubernetes", "react", "node",
+        "postgres", "mysql", "mongodb", "redis", "kafka", "spark",
+        "tensorflow", "pytorch", "pandas", "numpy", "flask", "django",
+        "fastapi", "rails", "vue", "angular", "swift", "kotlin",
+        "terraform", "git", "api", "rest", "graphql", "microservices",
+        "agile", "scrum", "jira", "figma", "tableau", "looker", "dbt",
+        "airflow", "snowflake", "bigquery", "databricks",
+    }
+    tech_kw   = [s for s in skills if s.lower() in KNOWN_TECH]
+    other_kw  = [s for s in skills if s.lower() not in KNOWN_TECH and len(s) > 4]
+    keywords  = (tech_kw + other_kw)[:20]
+
+    # ── 4. Industries ────────────────────────────────────────────────────────
+    INDUSTRY_PATTERNS = [
+        ("fintech",      ["fintech", "financial technology", "payments", "banking", "lending"]),
+        ("technology",   ["software", "saas", "platform", "cloud", "startup", "tech company"]),
+        ("healthcare",   ["healthcare", "health tech", "hospital", "clinical", "medical"]),
+        ("e-commerce",   ["ecommerce", "e-commerce", "marketplace", "retail"]),
+        ("media",        ["media", "content", "publishing", "entertainment", "streaming"]),
+        ("consulting",   ["consulting", "advisory", "professional services"]),
+        ("crypto",       ["crypto", "blockchain", "web3", "defi"]),
+        ("data",         ["data analytics", "business intelligence", " bi ", "analytics"]),
+        ("ai / ml",      ["machine learning", "deep learning", "artificial intelligence", "nlp"]),
+        ("cybersecurity",["security", "cybersecurity", "infosec", "soc", "siem"]),
+    ]
+    industries_found = [ind for ind, pats in INDUSTRY_PATTERNS
+                        if any(p in text_lower for p in pats)][:6]
+
+    return {
+        "target_titles":        titles_found,
+        "preferred_keywords":   keywords,
+        "preferred_industries": industries_found,
+        "preferred_seniority":  seniority_found,
+    }
+
+
 def extract_skills_from_resume(text: str) -> list[str]:
     abbrevs = re.findall(r"\b[A-Z]{2,6}\b", text)
     tokens = _tokenize(text)
@@ -606,6 +692,15 @@ def get_profile():
 def update_profile():
     data = request.get_json() or {}
     return jsonify({"ok": True, "profile": save_search_profile(data)})
+
+
+@app.route("/api/resume/suggest-profile", methods=["GET"])
+def suggest_profile_endpoint():
+    """Return suggested search-profile values extracted from the loaded resume."""
+    text, _ = load_resume_text()
+    if not text:
+        return jsonify({"error": "No resume loaded — upload your resume first"}), 400
+    return jsonify(suggest_profile_from_resume(text))
 
 
 # ──────────────────────────────────────────────────────────────────────────────

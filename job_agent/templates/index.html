@@ -973,22 +973,38 @@ input[type=checkbox] { accent-color: var(--accent); width: 14px; height: 14px; }
 
 <!-- Resume Modal -->
 <div class="modal-overlay hidden" id="resume-modal" onclick="closeModalOnBg(event,'resume-modal')">
-  <div class="modal">
+  <div class="modal" style="max-width:560px">
     <div class="modal-header">
       <div class="modal-title">Resume</div>
       <button class="modal-close" onclick="closeModal('resume-modal')">✕</button>
     </div>
     <div class="modal-body">
       <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px">
-        Upload your resume to enable intelligent job matching. Supports .docx, .pdf, or .txt files.
+        Upload your resume to enable intelligent job matching. Supports .pdf, .docx, or .txt files.
       </p>
       <div class="upload-zone" id="upload-zone" onclick="document.getElementById('resume-file').click()">
         <div class="upload-icon">📄</div>
-        <div class="upload-text">Click to upload .docx, .pdf, or .txt</div>
+        <div class="upload-text">Click to upload .pdf, .docx, or .txt</div>
         <div style="font-size:11px;color:var(--text-faint);margin-top:4px">or drag and drop</div>
       </div>
-      <input type="file" id="resume-file" accept=".docx,.pdf,.txt" class="hidden" onchange="uploadResume(this)" />
+      <input type="file" id="resume-file" accept=".pdf,.docx,.txt,.md" class="hidden" onchange="uploadResume(this)" />
       <div id="resume-status-msg" style="margin-top:12px;font-size:13px;color:var(--text-dim)"></div>
+
+      <!-- Auto-profile panel — shown after a successful upload -->
+      <div id="auto-profile-panel" class="hidden" style="margin-top:20px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+        <div style="padding:14px 16px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+          <span style="font-size:18px">✨</span>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text)">Search profile extracted</div>
+            <div style="font-size:12px;color:var(--text-dim)">Review and apply these suggestions to your search profile</div>
+          </div>
+        </div>
+        <div id="auto-profile-preview" style="padding:14px 16px;font-size:12px;color:var(--text-dim);line-height:1.8"></div>
+        <div style="padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="applyAutoProfile()">Apply to search profile</button>
+          <button class="btn btn-ghost" onclick="document.getElementById('auto-profile-panel').classList.add('hidden')">Dismiss</button>
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('resume-modal')">Close</button>
@@ -1746,21 +1762,76 @@ async function deleteCurrentJob() {
 // ──────────────────────────────
 function openResumeModal() { openModal('resume-modal'); }
 
+let _autoProfileSuggestions = null;
+
 async function uploadResume(input) {
   const file = input.files[0];
   if (!file) return;
   const formData = new FormData();
   formData.append('file', file);
   document.getElementById('resume-status-msg').textContent = 'Uploading…';
+  document.getElementById('auto-profile-panel').classList.add('hidden');
+
   const res = await fetch('/api/resume/upload', {method: 'POST', body: formData});
   const d = await res.json();
   if (d.ok) {
-    document.getElementById('resume-status-msg').textContent = `✓ Loaded — ${d.char_count} chars, ${d.skills.length} skills found: ${d.skills.slice(0,8).join(', ')}`;
+    document.getElementById('resume-status-msg').textContent =
+      `✓ Loaded — ${d.char_count.toLocaleString()} chars, ${d.skills.length} skills: ${d.skills.slice(0,8).join(', ')}`;
     await checkResume();
     toast('Resume loaded!', 'success');
+    // Immediately extract profile suggestions
+    try {
+      const sr = await fetch('/api/resume/suggest-profile');
+      const suggestions = await sr.json();
+      if (!suggestions.error) {
+        _autoProfileSuggestions = suggestions;
+        showAutoProfilePreview(suggestions);
+      }
+    } catch(e) { /* non-fatal */ }
   } else {
     document.getElementById('resume-status-msg').textContent = '✗ ' + (d.error || 'Upload failed');
     toast(d.error || 'Upload failed', 'error');
+  }
+}
+
+function showAutoProfilePreview(s) {
+  const fmt = (label, arr) => arr && arr.length
+    ? `<div style="margin-bottom:8px"><span style="color:var(--text);font-weight:500">${label}:</span> ${arr.slice(0,6).join(', ')}</div>`
+    : '';
+  document.getElementById('auto-profile-preview').innerHTML =
+    fmt('Titles', s.target_titles) +
+    fmt('Keywords', s.preferred_keywords) +
+    fmt('Industries', s.preferred_industries) +
+    fmt('Seniority', s.preferred_seniority);
+  document.getElementById('auto-profile-panel').classList.remove('hidden');
+}
+
+async function applyAutoProfile() {
+  if (!_autoProfileSuggestions) return;
+  // Merge with existing profile (don't wipe anything the user may have set)
+  let existing = {};
+  try {
+    const r = await fetch('/api/profile');
+    existing = await r.json();
+  } catch(e) {}
+
+  const merged = {
+    ...existing,
+    target_titles:        [...new Set([...(existing.target_titles||[]), ..._autoProfileSuggestions.target_titles])],
+    preferred_keywords:   [...new Set([...(existing.preferred_keywords||[]), ..._autoProfileSuggestions.preferred_keywords])],
+    preferred_industries: [...new Set([...(existing.preferred_industries||[]), ..._autoProfileSuggestions.preferred_industries])],
+    preferred_seniority:  [...new Set([...(existing.preferred_seniority||[]), ..._autoProfileSuggestions.preferred_seniority])],
+  };
+
+  const res = await fetch('/api/profile', {
+    method: 'PUT',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(merged)
+  });
+  const d = await res.json();
+  if (d.ok) {
+    document.getElementById('auto-profile-panel').classList.add('hidden');
+    toast('Search profile updated from resume ✓', 'success');
   }
 }
 
