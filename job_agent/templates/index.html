@@ -697,6 +697,61 @@ input[type=checkbox] { accent-color: var(--accent); width: 14px; height: 14px; }
   line-height: 1.5;
 }
 
+/* Help badge + popover */
+.help-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--bg3);
+  border: 1px solid var(--border-light);
+  color: var(--text-faint);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  vertical-align: middle;
+  margin-left: 6px;
+  flex-shrink: 0;
+  transition: border-color 0.15s, color 0.15s;
+  position: relative;
+}
+.help-badge:hover { border-color: var(--accent); color: var(--accent); }
+.help-popover {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+  background: var(--bg3);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.6;
+  z-index: 200;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  text-align: left;
+  font-weight: 400;
+}
+.help-popover::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 8px;
+  height: 8px;
+  background: var(--bg3);
+  border-left: 1px solid var(--border-light);
+  border-top: 1px solid var(--border-light);
+}
+.help-badge:hover .help-popover,
+.help-badge:focus .help-popover { display: block; }
+
 /* Job board buttons */
 .boards-list {
   display: flex;
@@ -1459,8 +1514,19 @@ async function renderSourcesView(content) {
     <div class="sources-section">
       <div class="sources-section-header">
         <div>
-          <div class="sources-section-title">Job Boards</div>
-          <div class="sources-section-sub">Opens a job board search based on your resume keywords. LinkedIn, Indeed, and Glassdoor don't allow automated fetching, so these open in your browser.</div>
+          <div class="sources-section-title" style="display:flex;align-items:center">
+            Job Boards
+            <span class="help-badge" tabindex="0">?
+              <div class="help-popover">
+                <strong style="color:var(--text);display:block;margin-bottom:6px">Why do these open in the browser?</strong>
+                LinkedIn, Indeed, Glassdoor and similar boards don't offer public APIs — they actively block automated access and will ban IPs that try to scrape them.<br><br>
+                Clicking a board opens a pre-built search using your resume keywords.<br><br>
+                <strong style="color:var(--text)">To add a job you find there:</strong><br>
+                Use <em>+ Add Job</em> and paste the listing URL — the scraper will pull the title and description automatically. Or if the company uses Greenhouse, Lever, or Ashby, add them under <em>Add a Company</em> to fetch all their roles directly.
+              </div>
+            </span>
+          </div>
+          <div class="sources-section-sub">Searches using your resume keywords — click to open in browser.</div>
         </div>
       </div>
       <div class="boards-list">${boardsHtml}</div>
